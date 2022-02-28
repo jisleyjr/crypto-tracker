@@ -1,4 +1,5 @@
-CREATE TABLE `transations` (
+USE `crypto-tracker`;
+CREATE TABLE `transactions` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `User_Id` int(11) DEFAULT NULL,
   `Time` timestamp,
