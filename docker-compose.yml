@@ -1,0 +1,25 @@
+version: '3.5'
+services:
+  importer:
+    build:
+      context: import_binance_csv
+      dockerfile: Dockerfile
+    depends_on:
+      - crypto-tracker-db
+    ports:
+      - "8922:80"
+    volumes:
+      - ./import_binance_csv/files:/media
+      - ./import_binance_csv/src:/app 
+    links:
+      - crypto-tracker-db
+  crypto-tracker-db:
+    image: mariadb:latest
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/init:/docker-entrypoint-initdb.d/:ro
+      - ./data/crypto-tracker-db:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: crypto-tracker
+      MYSQL_ROOT_PASSWORD: password
