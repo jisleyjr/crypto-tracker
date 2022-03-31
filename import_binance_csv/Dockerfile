@@ -13,3 +13,5 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY src .
+
+CMD [ "/app/import.sh" ]
