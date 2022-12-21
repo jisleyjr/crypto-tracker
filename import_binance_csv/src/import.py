@@ -64,7 +64,7 @@ try:
                 #print('Line 44')
                 #decimal = float(pi)
                 
-                user_id = int(row['\ufeffUser_Id'])
+                user_id = int(row['User_Id'])
 
                 primary_asset = None
                 primary_asset_amount = None
