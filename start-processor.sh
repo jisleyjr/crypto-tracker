@@ -1,5 +1,5 @@
 #!/bin/bash
-echo 'Launching Importer'
+echo 'Launching Processor'
 
 SRCDIR="`pwd`/processor/src"
 

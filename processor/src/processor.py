@@ -4,12 +4,6 @@ import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
 
-
-# initializing the titles and rows list
-fields = []
-rows = []
-
-
 try:
     cnx = mysql.connector.connect(user='root', password='password',
                                  host='crypto-tracker-db',
@@ -32,28 +26,58 @@ try:
 
     coins = []
 
+    # Find the coins with transactions
     for (coin, count) in cursor:
-
-        print(coin)
         if (count > 0):
             coins.append(coin)
-        #data_transaction = {
-        #    'Order_Id': user_id,
-        #    'Order_Date': row['Time'],
-        #    'Coin': row['Category'],
-        #    'Original_Qty': row['Operation'],
-        #    'Remaining_Qty': row['Order_Id'],
-        #    'Price': row['Transaction_Id'],
-        #    'with_method': row['Withdrawal_Method'] if row['Withdrawal_Method'] else None,
-        #    'note': row['Additional_Note'] if row['Additional_Note'] else None
-        #}
-
-        #print('Adding to array')
-        #data_transactions.append(data_transaction)
-
-    #print('Executing bulk insert sql')
     
-    #cursor.executemany(add_transaction, data_transactions)
+    cursor.close()
+    
+    # Loop through these coins
+    for coin in coins:
+        print(coin)
+
+        cursor = cnx.cursor(buffered=True)
+
+        query = ("SELECT Id, Time, Operation, Order_Id, "
+            "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, Realized_Amount_For_Base_Asset_In_USD_Value / Realized_Amount_For_Base_Asset as Price "
+            "FROM transactions "
+            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset = 'USD' and Operation = 'Buy' "
+            "GROUP BY Order_Id "
+            "ORDER BY Base_Asset asc, Time asc")
+
+        cursor.execute(query)
+
+        # Loop through the orders and if not in the positions table insert it
+        for (id, time, operation, order_id, coin, qty, price) in cursor:
+            #print(order_id)
+
+            orderSearchQuery = ("SELECT Id FROM positions WHERE Order_Id = " + order_id)
+            orderSearchCursor = cnx.cursor(buffered=True)
+            orderSearchCursor.execute(orderSearchQuery)
+
+            if orderSearchCursor.rowcount == 0:
+                data_transaction = {
+                    'order_id': order_id,
+                    'order_date': time,
+                    'coin': coin,
+                    'original_qty': qty,
+                    'remaining_qty': qty,
+                    'price': price
+                }
+
+                print('Adding to array')
+                data_transactions.append(data_transaction)
+            
+            orderSearchCursor.close()
+
+        cursor.close()
+
+
+    cursor = cnx.cursor(buffered=True)
+    print('Executing bulk insert sql')
+    
+    cursor.executemany(add_transaction, data_transactions)
     
     # Make sure data is committed to the database
     cnx.commit()
