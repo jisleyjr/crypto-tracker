@@ -6,6 +6,7 @@ CREATE TABLE `positions` (
   `Original_Qty` DECIMAL(65,9) DEFAULT NULL,
   `Remaining_Qty` DECIMAL(65,9) DEFAULT NULL,
   `Price` DECIMAL(65,6) DEFAULT NULL,
+  `Total_Cost` DECIMAL(65,6) DEFAULT NULL
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

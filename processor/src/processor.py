@@ -12,10 +12,9 @@ try:
     data_transactions = []
 
     add_transaction = ("INSERT INTO positions "
-            "(Order_Id, Order_Date, Coin, Original_Qty, Remaining_Qty, Price) "
-            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(original_qty)s, %(remaining_qty)s, %(price)s )")
+            "(Order_Id, Order_Date, Coin, Original_Qty, Remaining_Qty, Price, Total_Cost) "
+            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(original_qty)s, %(remaining_qty)s, %(price)s, %(total_cost)s )")
         
-
     cursor = cnx.cursor(buffered=True)
         
     query = ("SELECT Base_Asset, COUNT(Order_Id) " 
@@ -63,7 +62,8 @@ try:
                     'coin': coin,
                     'original_qty': qty,
                     'remaining_qty': qty,
-                    'price': price
+                    'price': price,
+                    'total_cost': qty * price
                 }
 
                 print('Adding to array')
