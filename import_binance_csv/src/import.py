@@ -3,7 +3,7 @@ import sys
 import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
-
+from decouple import config
 
 # Check if the filename was provided
 if (len(sys.argv) < 2):
@@ -19,8 +19,8 @@ rows = []
 
 
 try:
-    cnx = mysql.connector.connect(user='root', password='password',
-                                 host='crypto-tracker-db',
+    cnx = mysql.connector.connect(user=config('USER'), password=config('PASSWORD'),
+                                 host=config('HOST'),
                                  database='crypto-tracker')
 
     with open(filename, newline='\n') as csvfile:

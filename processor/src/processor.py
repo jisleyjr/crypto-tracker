@@ -3,10 +3,11 @@ import sys
 import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
+from decouple import config
 
 try:
-    cnx = mysql.connector.connect(user='root', password='password',
-                                 host='crypto-tracker-db',
+    cnx = mysql.connector.connect(user=config('USER'), password=config('PASSWORD'),
+                                 host=config('HOST'),
                                  database='crypto-tracker')
     
     data_transactions = []
@@ -38,17 +39,18 @@ try:
 
         cursor = cnx.cursor(buffered=True)
 
-        query = ("SELECT Id, Time, Operation, Order_Id, "
-            "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, Realized_Amount_For_Base_Asset_In_USD_Value / Realized_Amount_For_Base_Asset as Price "
+        query = ("SELECT MAX(Time) as Order_Date, Operation, Order_Id, "
+            "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, "
+            "SUM(Realized_Amount_For_Base_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price "
             "FROM transactions "
             "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset = 'USD' and Operation = 'Buy' "
             "GROUP BY Order_Id "
-            "ORDER BY Base_Asset asc, Time asc")
+            "ORDER BY Base_Asset asc, Order_Date asc")
 
         cursor.execute(query)
 
         # Loop through the orders and if not in the positions table insert it
-        for (id, time, operation, order_id, coin, qty, price) in cursor:
+        for (order_date, operation, order_id, coin, qty, price) in cursor:
             #print(order_id)
 
             orderSearchQuery = ("SELECT Id FROM positions WHERE Order_Id = " + order_id)
@@ -58,7 +60,7 @@ try:
             if orderSearchCursor.rowcount == 0:
                 data_transaction = {
                     'order_id': order_id,
-                    'order_date': time,
+                    'order_date': order_date,
                     'coin': coin,
                     'original_qty': qty,
                     'remaining_qty': qty,
