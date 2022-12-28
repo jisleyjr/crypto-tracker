@@ -2,5 +2,8 @@
 
 echo "Starting..."
 
-# take action on each file. $f store current file name  
-python3 processor.py
+echo "Inserting into positions table"
+python3 positions-processor.py
+
+echo "Inserting into sales table"
+python3 sales-processor.py

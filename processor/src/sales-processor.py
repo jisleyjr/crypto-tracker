@@ -12,9 +12,9 @@ try:
     
     data_transactions = []
 
-    add_transaction = ("INSERT INTO positions "
-            "(Order_Id, Order_Date, Coin, Original_Qty, Remaining_Qty, Price, Total_Cost) "
-            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(original_qty)s, %(remaining_qty)s, %(price)s, %(total_cost)s )")
+    add_transaction = ("INSERT INTO sales "
+            "(Order_Id, Order_Date, Coin, Qty, Price, Total_Proceeds) "
+            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(qty)s, %(price)s, %(total_proceeds)s )")
         
     cursor = cnx.cursor(buffered=True)
         
@@ -39,21 +39,22 @@ try:
 
         cursor = cnx.cursor(buffered=True)
 
-        query = ("SELECT MAX(Time) as Order_Date, Operation, Order_Id, "
+        query = ("SELECT MAX(Time) as Order_Date, Order_Id, "
             "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, "
-            "SUM(Realized_Amount_For_Base_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price "
+            "SUM(Realized_Amount_For_Base_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price, "
+            "SUM(Realized_Amount_For_Base_Asset_In_USD_Value) as Total "
             "FROM transactions "
-            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset = 'USD' and Operation = 'Buy' "
+            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset = 'USD' and Operation = 'Sell' "
             "GROUP BY Order_Id "
             "ORDER BY Base_Asset asc, Order_Date asc")
 
         cursor.execute(query)
 
-        # Loop through the orders and if not in the positions table insert it
-        for (order_date, operation, order_id, coin, qty, price) in cursor:
+        # Loop through the orders and if not in the sales table insert it
+        for (order_date, order_id, coin, qty, price, total) in cursor:
             #print(order_id)
 
-            orderSearchQuery = ("SELECT Id FROM positions WHERE Order_Id = " + order_id)
+            orderSearchQuery = ("SELECT Id FROM sales WHERE Order_Id = " + order_id)
             orderSearchCursor = cnx.cursor(buffered=True)
             orderSearchCursor.execute(orderSearchQuery)
 
@@ -62,10 +63,9 @@ try:
                     'order_id': order_id,
                     'order_date': order_date,
                     'coin': coin,
-                    'original_qty': qty,
-                    'remaining_qty': qty,
+                    'qty': qty,
                     'price': price,
-                    'total_cost': qty * price
+                    'total_proceeds': total
                 }
 
                 print('Adding to array')

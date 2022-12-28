@@ -1,7 +1,7 @@
-SELECT DATE_FORMAT(created_at, "%Y-%m") as 'created_month', market, transaction_type, AVG(price), SUM(amount), SUM(total), SUM(fee)
-FROM homestead.transactions
-WHERE market = 'ETHUSD'
-GROUP BY created_month, market, transaction_type
-order by created_month desc, transaction_type desc
-
-/*SELECT DISTINCT market from `transactions` */
+SELECT MAX(Time) as Order_Date, Operation, Order_Id,
+Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, 
+SUM(Realized_Amount_For_Base_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price 
+FROM transactions 
+WHERE Category = 'Spot Trading' and Base_Asset = 'Flux' and Quote_Asset = 'USD' and Operation = 'Sell' 
+GROUP BY Order_Id 
+ORDER BY Base_Asset asc, Order_Date asc
