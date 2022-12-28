@@ -1,3 +1,5 @@
+USE `crypto-tracker`;
+
 CREATE TABLE `transactions` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `User_Id` int(11) DEFAULT NULL,
@@ -45,6 +47,7 @@ CREATE TABLE `sales` (
   `Qty` DECIMAL(65,9) DEFAULT NULL,
   `Price` DECIMAL(65,6) DEFAULT NULL,
   `Total_Proceeds` DECIMAL(65,6) DEFAULT NULL,
+  `Processed` bit DEFAULT 0,
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
