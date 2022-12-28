@@ -48,6 +48,9 @@ CREATE TABLE `sales` (
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+/*
+TODO : Add indexes and foreign key
+*/
 CREATE TABLE `position_sales` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `Position_Id` int(11) NOT NULL,

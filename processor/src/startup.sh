@@ -3,7 +3,7 @@
 echo "Starting..."
 
 echo "Inserting into positions table"
-python3 positions-processor.py
+python3 insert-positions.py
 
 echo "Inserting into sales table"
-python3 sales-processor.py
+python3 insert-sales.py
