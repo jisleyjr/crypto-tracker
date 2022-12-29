@@ -4,8 +4,11 @@ import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
 from decouple import config
+from decimal import *
 
 try:
+    getcontext().prec = 10
+
     cnx = mysql.connector.connect(user=config('USER'), password=config('PASSWORD'),
                                  host=config('HOST'),
                                  database='crypto-tracker')
@@ -49,30 +52,60 @@ try:
 
         # Loop through the orders and if not in the sales table insert it
         for (sale_id, sell_date, qty) in cursor:
-            print(f'Sale_Id: {sale_id} Sell_Date: {sell_date} Qty: {qty:.3f}')
+            dec_qty = Decimal(qty)
+
+            print(f'Sale_Id: {sale_id} Sell_Date: {sell_date} Qty: {qty:.3f} Dec_Qty: {dec_qty}')
 
             print("Find possible buy order")
-            orderSearchQuery = ("SELECT Id, Order_Date, Remaining_Qty "
+            positionSearchQuery = ("SELECT Id, Order_Date, Remaining_Qty "
                 "FROM positions "
                 "WHERE Coin = %s and Remaining_Qty > 0 and Order_Date <= %s ")
             
-            orderSearchCursor = cnx.cursor(buffered=True)
-            orderSearchCursor.execute(orderSearchQuery, (coin, sell_date))
+            positionSearchCursor = cnx.cursor(buffered=True)
+            positionSearchCursor.execute(positionSearchQuery, (coin, sell_date))
 
-            for (position_id, buy_date, remaining_qty) in orderSearchCursor:
-                
-                print(f'Position_Id: {position_id} Buy_Date: {buy_date} Qty: {remaining_qty}')
+            carry_over_qty = 0.000000
+            for (position_id, buy_date, remaining_qty) in positionSearchCursor:                
+                dec_remaining_qty = Decimal(remaining_qty)
+
+                # The amount to pull out of next order or update this position with?
+                carry_over_qty = remaining_qty - qty
+
+                print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Qty: {remaining_qty} Carry Over: {carry_over_qty}')
             
-                data_transaction = {
-                    'position_id': position_id,
-                    'sale_id': sale_id,                    
-                    'qty': qty                    
-                }
+                if (carry_over_qty == 0):
+                    print('No carry over')
+                    # The sales perfectly closes out the position so remaining_qty is 0
+                    data_transaction = {
+                        'position_id': position_id,
+                        'sale_id': sale_id,
+                        'qty': remaining_qty
+                    }
+                    # Update position's remaining_qty to 0
+                elif (carry_over_qty < 0):
+                    # This means the remaining qty was too small
+                    # Use the remaining_qty on the new zref
+                    print('Carry over into next position')
+
+                    data_transaction = {
+                        'position_id': position_id,
+                        'sale_id': sale_id, 
+                        'qty': remaining_qty
+                    }
+                    # Update position's remaining_qty to 0
+                else:
+                    # carry_over_qty > 0
+                    data_transaction = {
+                        'position_id': position_id,
+                        'sale_id': sale_id,
+                        'qty': qty
+                    }
+                    # Update position's remaining_qty to carry_over_qty
 
             #    print('Adding to array')
             ##    data_transactions.append(data_transaction)
             
-            orderSearchCursor.close()
+            positionSearchCursor.close()
 
         cursor.close()
 
