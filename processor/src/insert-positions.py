@@ -3,35 +3,18 @@ import sys
 import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
-from decouple import config
+from helpers import get_coins, get_context
 
 try:
-    cnx = mysql.connector.connect(user=config('USER'), password=config('PASSWORD'),
-                                 host=config('HOST'),
-                                 database='crypto-tracker')
+    cnx = get_context()
     
     data_transactions = []
 
     add_transaction = ("INSERT INTO positions "
             "(Order_Id, Order_Date, Coin, Original_Qty, Remaining_Qty, Price, Total_Cost) "
             "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(original_qty)s, %(remaining_qty)s, %(price)s, %(total_cost)s )")
-        
-    cursor = cnx.cursor(buffered=True)
-        
-    query = ("SELECT Base_Asset, COUNT(Order_Id) " 
-        "FROM transactions WHERE Category = 'Spot Trading' " 
-        "GROUP BY Base_Asset")
 
-    cursor.execute(query)
-
-    coins = []
-
-    # Find the coins with transactions
-    for (coin, count) in cursor:
-        if (count > 0):
-            coins.append(coin)
-    
-    cursor.close()
+    coins = get_coins(cnx)
     
     # Loop through these coins
     for coin in coins:

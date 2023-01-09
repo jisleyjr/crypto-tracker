@@ -1,70 +1,100 @@
-import csv
 import sys
 import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
-from decouple import config
 from decimal import *
+from helpers import get_coins, get_context
 
+def update_position(position_id, remaining_qty, cnx):
+    query = ("UPDATE positiions SET Remaining_Qty = {remaining_qty} WHERE Id = {position_id}")
+
+    cursor = cnx.cursor(buffered=True)
+    #cursor.execute(query)
+
+    return cursor.rowcount
+
+def insert_position_sales(position_id, sale_id, qty, cnx):
+    cursor = cnx.cursor(buffered=True)
+
+    query = ("INSERT INTO position_sales "
+            "(Position_Id, Sale_Id, Qty) "
+            "VALUES ({position_id}, {sale_id}, {qty:.10f})")
+    
+    #cursor.execute(query)
+
+    cursor.close()
+
+def update_sale(sale_id, cnx):
+    query = ("UPDATE sales SET Processed = 1 WHERE Id = {sale_id}")
+
+    cursor = cnx.cursor(buffered=True)
+    #cursor.execute(query)
+
+    return cursor.rowcount
+
+def get_unprocessed_sales(coin, cnx):
+    sales = []
+    cursor = cnx.cursor(buffered=True)
+
+    print("Select unprocessed sales")
+    query = ("SELECT Id, Order_Date, Qty "
+        "FROM sales "
+        "WHERE Coin = '" + coin + "' and Processed = 0 "
+        "ORDER BY Order_Date asc LIMIT 2")
+
+    cursor.execute(query)
+
+    for (sale_id, sell_date, qty) in cursor:
+        sales.append((sale_id, sell_date, qty))
+
+    cursor.close()
+
+    return sales
+
+def unpack(sale):
+    return sale[0], sale[1], sale[2]
+
+# Main function
 try:
     getcontext().prec = 10
 
-    cnx = mysql.connector.connect(user=config('USER'), password=config('PASSWORD'),
-                                 host=config('HOST'),
-                                 database='crypto-tracker')
+    cnx = get_context()
     
     data_transactions = []
 
     add_transaction = ("INSERT INTO position_sales "
             "(Position_Id, Sale_Id, Qty) "
             "VALUES (%(position_id)s, %(sale_id)s, %(qty)s)")
-        
-    cursor = cnx.cursor(buffered=True)
-        
-    query = ("SELECT Base_Asset, COUNT(Order_Id) " 
-        "FROM transactions WHERE Category = 'Spot Trading' and Base_Asset='Flux' " 
-        "GROUP BY Base_Asset")
-
-    cursor.execute(query)
-
-    coins = []
-
-    # Find the coins with transactions
-    for (coin, count) in cursor:
-        if (count > 0):
-            coins.append(coin)
     
-    cursor.close()
-    
+    coins = get_coins(cnx)
+
     # Loop through these coins
     for coin in coins:
         print(coin)
 
-        cursor = cnx.cursor(buffered=True)
-
-        print("Select unprocessed sales")
-        query = ("SELECT Id, Order_Date, Qty "
-            "FROM sales "
-            "WHERE Coin = '" + coin + "' and Processed = 0 "
-            "ORDER BY Order_Date asc")
-
-        cursor.execute(query)
+        # Get unprocessed sales
+        sales = get_unprocessed_sales(coin, cnx)
 
         # Loop through the orders and if not in the sales table insert it
-        for (sale_id, sell_date, qty) in cursor:
-            dec_qty = Decimal(qty)
+        # sale_id, sell_date, qty
+        i = 0
 
-            print(f'Sale_Id: {sale_id} Sell_Date: {sell_date} Qty: {qty:.3f} Dec_Qty: {dec_qty}')
+        #for (sale_id, sell_date, qty) in sales:
+        while i < len(sales):
+            sale_id, sell_date, qty = unpack(sales[i])
+
+            print(f'Sale_Id: {sale_id} Sell_Date: {sell_date} Qty: {qty:.3f}')
 
             print("Find possible buy order")
             positionSearchQuery = ("SELECT Id, Order_Date, Remaining_Qty "
                 "FROM positions "
-                "WHERE Coin = %s and Remaining_Qty > 0 and Order_Date <= %s ")
+                "WHERE Coin = %s and Remaining_Qty > 0.0 and Order_Date <= %s ")
             
             positionSearchCursor = cnx.cursor(buffered=True)
             positionSearchCursor.execute(positionSearchQuery, (coin, sell_date))
 
             carry_over_qty = 0.000000
+
             for (position_id, buy_date, remaining_qty) in positionSearchCursor:                
                 dec_remaining_qty = Decimal(remaining_qty)
 
@@ -74,52 +104,51 @@ try:
                 print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Qty: {remaining_qty} Carry Over: {carry_over_qty}')
             
                 if (carry_over_qty == 0):
-                    print('No carry over')
+                    print('       No carry over')
                     # The sales perfectly closes out the position so remaining_qty is 0
-                    data_transaction = {
-                        'position_id': position_id,
-                        'sale_id': sale_id,
-                        'qty': remaining_qty
-                    }
+                    
                     # Update position's remaining_qty to 0
+                    update_position(position_id, 0, cnx)
+
+                    insert_position_sales(position_id, sale_id, remaining_qty, cnx)
+
+                    # Mark as processed
+                    update_sale(sale_id, cnx)
+
+                    break
                 elif (carry_over_qty < 0):
                     # This means the remaining qty was too small
-                    # Use the remaining_qty on the new zref
-                    print('Carry over into next position')
+                    # Use the remaining_qty on the new xref
+                    print('       Carry over into next position')
 
-                    data_transaction = {
-                        'position_id': position_id,
-                        'sale_id': sale_id, 
-                        'qty': remaining_qty
-                    }
                     # Update position's remaining_qty to 0
+                    update_position(position_id, 0, cnx)
+
+                    insert_position_sales(position_id, sale_id, remaining_qty, cnx)
+
+                    # With the carry over qty we need to look at next sales and take out of that qty
                 else:
                     # carry_over_qty > 0
-                    data_transaction = {
-                        'position_id': position_id,
-                        'sale_id': sale_id,
-                        'qty': qty
-                    }
-                    # Update position's remaining_qty to carry_over_qty
+                    print('       Carry over > 0, next order will get this one.')
 
-            #    print('Adding to array')
-            ##    data_transactions.append(data_transaction)
+                    # Update position's remaining_qty to carry_over_qty
+                    update_position(position_id, carry_over_qty, cnx)
+
+                    insert_position_sales(position_id, sale_id, qty, cnx)
+
+                    # Mark as processed
+                    update_sale(sale_id, cnx)
+
+                    break
             
             positionSearchCursor.close()
 
-        cursor.close()
-
-
-    #cursor = cnx.cursor(buffered=True)
-    #print('Executing bulk insert sql')
-    
-    #cursor.executemany(add_transaction, data_transactions)
+            # increment index
+            i = i + 1
     
     # Make sure data is committed to the database
-    cnx.commit()
-    cursor.close()
+    #cnx.commit()
 
-    #print(row['\ufeffUser_Id'])
     print('Done')
 
 except mysql.connector.Error as err:
