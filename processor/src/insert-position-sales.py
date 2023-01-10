@@ -6,10 +6,10 @@ from decimal import *
 from helpers import get_coins, get_context
 
 def update_position(position_id, remaining_qty, cnx):
-    query = ("UPDATE positiions SET Remaining_Qty = {remaining_qty} WHERE Id = {position_id}")
-
+    query = ("UPDATE positions SET `Remaining_Qty` = %s WHERE Id = %s ")
+    
     cursor = cnx.cursor(buffered=True)
-    #cursor.execute(query)
+    cursor.execute(query, (remaining_qty, position_id))
 
     return cursor.rowcount
 
@@ -18,17 +18,17 @@ def insert_position_sales(position_id, sale_id, qty, cnx):
 
     query = ("INSERT INTO position_sales "
             "(Position_Id, Sale_Id, Qty) "
-            "VALUES ({position_id}, {sale_id}, {qty:.10f})")
+            "VALUES (%s, %s, %s)")
     
-    #cursor.execute(query)
+    cursor.execute(query, (position_id, sale_id, qty))
 
     cursor.close()
 
 def update_sale(sale_id, cnx):
-    query = ("UPDATE sales SET Processed = 1 WHERE Id = {sale_id}")
+    query = ("UPDATE sales SET Processed = %s WHERE Id = %s ")
 
     cursor = cnx.cursor(buffered=True)
-    #cursor.execute(query)
+    cursor.execute(query, (1, sale_id))
 
     return cursor.rowcount
 
@@ -40,7 +40,7 @@ def get_unprocessed_sales(coin, cnx):
     query = ("SELECT Id, Order_Date, Qty "
         "FROM sales "
         "WHERE Coin = '" + coin + "' and Processed = 0 "
-        "ORDER BY Order_Date asc LIMIT 2")
+        "ORDER BY Order_Date asc")
 
     cursor.execute(query)
 
@@ -53,6 +53,10 @@ def get_unprocessed_sales(coin, cnx):
 
 def unpack(sale):
     return sale[0], sale[1], sale[2]
+
+def pull_out_of_next_sale(i, sales, carry_over_qty, cnx):
+
+    return i
 
 # Main function
 try:
@@ -99,16 +103,19 @@ try:
                 dec_remaining_qty = Decimal(remaining_qty)
 
                 # The amount to pull out of next order or update this position with?
-                carry_over_qty = remaining_qty - qty
+                if (carry_over_qty < 0.0):
+                    print("Processing carry_over_qty")
+                    carry_over_qty = remaining_qty + carry_over_qty
+                else:
+                    carry_over_qty = remaining_qty - qty
 
                 print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Qty: {remaining_qty} Carry Over: {carry_over_qty}')
             
                 if (carry_over_qty == 0):
                     print('       No carry over')
-                    # The sales perfectly closes out the position so remaining_qty is 0
-                    
+                    # The sales perfectly closes out the position so remaining_qty is 0                    
                     # Update position's remaining_qty to 0
-                    update_position(position_id, 0, cnx)
+                    update_position(position_id, 0.0, cnx)
 
                     insert_position_sales(position_id, sale_id, remaining_qty, cnx)
 
@@ -117,7 +124,7 @@ try:
 
                     break
                 elif (carry_over_qty < 0):
-                    # This means the remaining qty was too small
+                    # This means the remaining_qty was too small and we need to look at next sales
                     # Use the remaining_qty on the new xref
                     print('       Carry over into next position')
 
@@ -126,7 +133,8 @@ try:
 
                     insert_position_sales(position_id, sale_id, remaining_qty, cnx)
 
-                    # With the carry over qty we need to look at next sales and take out of that qty
+                    # Mark as processed
+                    update_sale(sale_id, cnx)
                 else:
                     # carry_over_qty > 0
                     print('       Carry over > 0, next order will get this one.')
@@ -135,7 +143,6 @@ try:
                     update_position(position_id, carry_over_qty, cnx)
 
                     insert_position_sales(position_id, sale_id, qty, cnx)
-
                     # Mark as processed
                     update_sale(sale_id, cnx)
 
@@ -147,7 +154,7 @@ try:
             i = i + 1
     
     # Make sure data is committed to the database
-    #cnx.commit()
+    cnx.commit()
 
     print('Done')
 
