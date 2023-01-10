@@ -1,6 +1,6 @@
 SELECT Id, Order_Date, Coin, Qty
 FROM sales
-WHERE Coin = 'Flux' and Processed = 0
+WHERE Coin = 'FLUX' and Processed = 0
 ORDER BY Order_Date
 
 /*
