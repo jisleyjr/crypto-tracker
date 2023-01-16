@@ -10,7 +10,7 @@ def get_coins(cnx):
     
     # Hardcoded the flux for now
     query = ("SELECT Base_Asset, COUNT(Order_Id) " 
-        "FROM transactions WHERE Category = 'Spot Trading' and Base_Asset='FLUX' " 
+        "FROM transactions WHERE Category = 'Spot Trading' " 
         "GROUP BY Base_Asset")
 
     cursor.execute(query)
