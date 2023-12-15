@@ -24,7 +24,7 @@ try:
 
         query = ("SELECT MAX(Time) as Order_Date, Order_Id, "
             "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, "
-            "SUM(Realized_Amount_For_Base_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price "
+            "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price "
             "FROM transactions "
             "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT') and Operation = 'Buy' "
             "GROUP BY Order_Id "
