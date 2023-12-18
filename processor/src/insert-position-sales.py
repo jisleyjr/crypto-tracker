@@ -64,12 +64,6 @@ try:
 
     cnx = get_context()
     
-    data_transactions = []
-
-    add_transaction = ("INSERT INTO position_sales "
-            "(Position_Id, Sale_Id, Qty) "
-            "VALUES (%(position_id)s, %(sale_id)s, %(qty)s)")
-    
     coins = get_coins(cnx)
 
     # Loop through these coins
