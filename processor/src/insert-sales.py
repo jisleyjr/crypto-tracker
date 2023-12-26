@@ -35,13 +35,12 @@ try:
 
         # Loop through the orders and if not in the sales table insert it
         for (order_date, order_id, coin, qty, price, total) in cursor:
-            #print(order_id)
-
-            orderSearchQuery = ("SELECT Id FROM sales WHERE Order_Id = " + order_id)
+            orderSearchQuery = ("SELECT Id FROM sales WHERE Order_Date = %s and Order_Id = %s")
             orderSearchCursor = cnx.cursor(buffered=True)
-            orderSearchCursor.execute(orderSearchQuery)
+            orderSearchCursor.execute(orderSearchQuery, (order_date, order_id))
 
             if orderSearchCursor.rowcount == 0:
+                #print(order_id)
                 data_transaction = {
                     'order_id': order_id,
                     'order_date': order_date,
