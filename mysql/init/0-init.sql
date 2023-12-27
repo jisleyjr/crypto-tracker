@@ -3,7 +3,7 @@ USE `crypto-tracker`;
 CREATE TABLE `transactions` (
   `Id` int(11) NOT NULL AUTO_INCREMENT,
   `User_Id` int(11) DEFAULT NULL,
-  `Time` timestamp,
+  `Time` timestamp DEFAULT NULL,
   `Category` varchar(50) DEFAULT NULL,
   `Operation` varchar(50) DEFAULT NULL,
   `Order_Id` varchar(50) DEFAULT NULL,
