@@ -81,6 +81,7 @@ try:
         while i < len(sales):
             sale_id, sell_date, qty = unpack(sales[i])
 
+            print("") # Print blank line
             print(f'Sale_Id: {sale_id} Sell_Date: {sell_date} Qty: {qty:.3f}')
 
             print("Find possible buy order")
@@ -98,15 +99,30 @@ try:
 
                 # The amount to pull out of next order or update this position with?
                 if (carry_over_qty < 0.0):
-                    print("Processing carry_over_qty")
+                    print("4: Processing carry_over_qty")
                     carry_over_qty = remaining_qty + carry_over_qty
+
+                    # If carry_over_qty is negative it means the remaining_qty on position was 
+                    # too small and we need to spread it out over the next positions, which is handled down below
+                    if (carry_over_qty > 0.0):
+                        print("5: carry_over_qty is greater than 0.0")
+                        # Create a new xref using the carry_over_qty
+                        insert_position_sales(position_id, sale_id, carry_over_qty, cnx)
+                        
+                        # We need to update the position's remaining_qty
+                        update_position(position_id, remaining_qty - carry_over_qty, cnx)
+
+                        # Mark as processed
+                        update_sale(sale_id, cnx)
+                        break
                 else:
+                    # -50 = 50 - 100
                     carry_over_qty = remaining_qty - qty
 
                 print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Qty: {remaining_qty} Carry Over: {carry_over_qty}')
             
                 if (carry_over_qty == 0):
-                    print('       No carry over')
+                    print('1: No carry over')
                     # The sales perfectly closes out the position so remaining_qty is 0                    
                     # Update position's remaining_qty to 0
                     update_position(position_id, 0.0, cnx)
@@ -118,20 +134,17 @@ try:
 
                     break
                 elif (carry_over_qty < 0):
+                    print('2: Carry over into next position')
                     # This means the remaining_qty was too small and we need to look at next sales
                     # Use the remaining_qty on the new xref
-                    print('       Carry over into next position')
 
                     # Update position's remaining_qty to 0
                     update_position(position_id, 0, cnx)
 
                     insert_position_sales(position_id, sale_id, remaining_qty, cnx)
-
-                    # Mark as processed
-                    update_sale(sale_id, cnx)
                 else:
                     # carry_over_qty > 0
-                    print('       Carry over > 0, next order will get this one.')
+                    print('3: Carry over > 0, next order will get this one.')
 
                     # Update position's remaining_qty to carry_over_qty
                     update_position(position_id, carry_over_qty, cnx)
