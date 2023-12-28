@@ -96,21 +96,22 @@ try:
 
             for (position_id, buy_date, remaining_qty) in positionSearchCursor:                
                 dec_remaining_qty = Decimal(remaining_qty)
-
+                print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Remaining_Qty: {remaining_qty} Carry_Over: {carry_over_qty}')
+            
                 # The amount to pull out of next order or update this position with?
                 if (carry_over_qty < 0.0):
-                    print("4: Processing carry_over_qty")
+                    print(f'4: Processing carry_over_qty: {carry_over_qty}, calculating new carry_over_qty')
                     carry_over_qty = remaining_qty + carry_over_qty
 
                     # If carry_over_qty is negative it means the remaining_qty on position was 
                     # too small and we need to spread it out over the next positions, which is handled down below
                     if (carry_over_qty > 0.0):
-                        print("5: carry_over_qty is greater than 0.0")
+                        print(f'5: carry_over_qty is greater than 0.0: {carry_over_qty}')
                         # Create a new xref using the carry_over_qty
-                        insert_position_sales(position_id, sale_id, carry_over_qty, cnx)
+                        insert_position_sales(position_id, sale_id, remaining_qty - carry_over_qty, cnx)
                         
                         # We need to update the position's remaining_qty
-                        update_position(position_id, remaining_qty - carry_over_qty, cnx)
+                        update_position(position_id, carry_over_qty, cnx)
 
                         # Mark as processed
                         update_sale(sale_id, cnx)
@@ -118,9 +119,8 @@ try:
                 else:
                     # -50 = 50 - 100
                     carry_over_qty = remaining_qty - qty
-
-                print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Qty: {remaining_qty} Carry Over: {carry_over_qty}')
-            
+                
+                print(f'-----  Position_Id: {position_id} Buy_Date: {buy_date} Remaining_Qty: {remaining_qty} Carry_Over: {carry_over_qty}')
                 if (carry_over_qty == 0):
                     print('1: No carry over')
                     # The sales perfectly closes out the position so remaining_qty is 0                    
