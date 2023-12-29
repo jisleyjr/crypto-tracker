@@ -1,5 +1,3 @@
-import csv
-import sys
 import mysql.connector
 from operator import delitem
 from mysql.connector import errorcode
