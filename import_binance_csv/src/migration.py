@@ -5,6 +5,44 @@ from operator import delitem
 from mysql.connector import errorcode
 from decouple import config
 
+def get_position_id(order_id, cnx):
+    ids = []
+    cursor = cnx.cursor(buffered=True)
+    
+    query = ("SELECT Id FROM positions WHERE Order_Id = '" + order_id + "' ")
+
+    cursor.execute(query)
+    
+    if cursor.rowcount > 0:
+        # Find the coins with transactions
+        for (id) in cursor:
+            ids.append(id[0])
+    else:
+        ids.append(0)
+
+    cursor.close()
+
+    return ids[0]
+
+def get_sale_id(order_id, cnx):
+    ids = []
+    cursor = cnx.cursor(buffered=True)
+    
+    query = ("SELECT Id FROM sales WHERE Order_Id = '" + order_id + "' ")
+
+    cursor.execute(query)
+    
+    if cursor.rowcount > 0:
+        # Find the coins with transactions
+        for (id) in cursor:
+            ids.append(id[0])
+    else:
+        ids.append(0)
+        
+    cursor.close()
+
+    return ids[0]
+
 # Check if the filename was provided
 if (len(sys.argv) < 2):
     print("Filename was not provided!")
@@ -28,24 +66,31 @@ try:
 
         data_transactions = []
 
-        add_transaction = ("INSERT INTO position_sales (Position_Id, Sale_Id, Qty) "
-                           "VALUES (%(position_id)s, %(sale_id)s, %(qty)s)")
+        add_transaction = ("INSERT INTO position_sales (Position_Id, Position_Order_Id, Sale_Id, Sale_Order_Id, Qty) "
+                           "VALUES (%(position_id)s, %(position_order_id)s, %(sale_id)s, %(sale_order_id)s, %(qty)s)")
         cursor = cnx.cursor(buffered=True)
 
         for row in reader:
             print('Check if position_sales exists')
 
             query = ("SELECT Id FROM position_sales "
-                "WHERE Position_Id = %s AND Sale_Id = %s")
+                "WHERE Position_Order_Id = %s AND Sale_Order_Id = %s")
 
             cursor.execute(query, (row['Position_Id'], row['Sale_Id']))
 
             if cursor.rowcount > 0:
                 print('Record already exists')
             else:
+                # Find the position id
+                position_id = get_position_id(row['Position_Id'], cnx)
+                # Find the sale id
+                sale_id = get_sale_id(row['Sale_Id'], cnx)
+                
                 data_transaction = {
-                    'position_id': row['Position_Id'],
-                    'sale_id': row['Sale_Id'],
+                    'position_id': position_id,
+                    'position_order_id': row['Position_Id'],
+                    'sale_id': sale_id,
+                    'sale_order_id': row['Sale_Id'],
                     'qty': row['Qty']
                 }
 
