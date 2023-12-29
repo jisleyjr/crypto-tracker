@@ -8,7 +8,6 @@ def get_coins(cnx):
     coins = []
     cursor = cnx.cursor(buffered=True)
     
-    # Hardcoded the flux for now
     query = ("SELECT Base_Asset, COUNT(Order_Id) " 
         "FROM transactions WHERE Category = 'Spot Trading' " 
         "GROUP BY Base_Asset")

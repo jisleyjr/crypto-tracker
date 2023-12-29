@@ -54,10 +54,6 @@ def get_unprocessed_sales(coin, cnx):
 def unpack(sale):
     return sale[0], sale[1], sale[2]
 
-def pull_out_of_next_sale(i, sales, carry_over_qty, cnx):
-
-    return i
-
 # Main function
 try:
     getcontext().prec = 10
