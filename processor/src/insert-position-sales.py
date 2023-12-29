@@ -24,7 +24,7 @@ def insert_position_sales(position_id, sale_id, qty, cnx):
 
     cursor.close()
 
-def update_sale(sale_id, cnx):
+def mark_sale_as_processed(sale_id, cnx):
     query = ("UPDATE sales SET Processed = %s WHERE Id = %s ")
 
     cursor = cnx.cursor(buffered=True)
@@ -110,7 +110,7 @@ try:
                         update_position(position_id, carry_over_qty, cnx)
 
                         # Mark as processed
-                        update_sale(sale_id, cnx)
+                        mark_sale_as_processed(sale_id, cnx)
                         break
                 else:
                     # -50 = 50 - 100
@@ -126,7 +126,7 @@ try:
                     insert_position_sales(position_id, sale_id, remaining_qty, cnx)
 
                     # Mark as processed
-                    update_sale(sale_id, cnx)
+                    mark_sale_as_processed(sale_id, cnx)
 
                     break
                 elif (carry_over_qty < 0):
@@ -147,7 +147,7 @@ try:
 
                     insert_position_sales(position_id, sale_id, qty, cnx)
                     # Mark as processed
-                    update_sale(sale_id, cnx)
+                    mark_sale_as_processed(sale_id, cnx)
 
                     break
             

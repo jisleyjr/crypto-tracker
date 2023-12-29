@@ -13,7 +13,7 @@ def update_position(position_id, qty, cnx):
 
     return cursor.rowcount
 
-def update_sale(sale_id, cnx):
+def mark_sale_as_processed(sale_id, cnx):
     query = ("UPDATE sales SET Processed = %s WHERE Order_Id = %s ")
 
     cursor = cnx.cursor(buffered=True)
@@ -43,7 +43,7 @@ try:
             update_position(position_id, qty, cnx)
 
             print(sale_id)
-            update_sale(sale_id, cnx)
+            mark_sale_as_processed(sale_id, cnx)
 
     
     # Make sure data is committed to the database
