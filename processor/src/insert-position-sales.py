@@ -13,14 +13,14 @@ def update_position(position_id, remaining_qty, cnx):
 
     return cursor.rowcount
 
-def insert_position_sales(position_id, sale_id, qty, cnx):
+def insert_position_sales(position_id, position_order_id, sale_id, sale_order_id, qty, cnx):
     cursor = cnx.cursor(buffered=True)
 
     query = ("INSERT INTO position_sales "
-            "(Position_Id, Sale_Id, Qty) "
-            "VALUES (%s, %s, %s)")
+            "(Position_Id, Position_Order_Id, Sale_Id, Sale_Order_Id, Qty) "
+            "VALUES (%s, %s, %s, %s, %s)")
     
-    cursor.execute(query, (position_id, sale_id, qty))
+    cursor.execute(query, (position_id, position_order_id, sale_id, sale_order_id, qty))
 
     cursor.close()
 
@@ -37,22 +37,22 @@ def get_unprocessed_sales(coin, cnx):
     cursor = cnx.cursor(buffered=True)
 
     print("Select unprocessed sales")
-    query = ("SELECT Id, Order_Date, Qty "
+    query = ("SELECT Id, Order_Id, Order_Date, Qty "
         "FROM sales "
         "WHERE Coin = '" + coin + "' and Processed = 0 "
         "ORDER BY Order_Date asc")
 
     cursor.execute(query)
 
-    for (sale_id, sell_date, qty) in cursor:
-        sales.append((sale_id, sell_date, qty))
+    for (sale_id, sale_order_id, sell_date, qty) in cursor:
+        sales.append((sale_id, sale_order_id, sell_date, qty))
 
     cursor.close()
 
     return sales
 
 def unpack(sale):
-    return sale[0], sale[1], sale[2]
+    return sale[0], sale[1], sale[2], sale[3]
 
 # Main function
 try:
@@ -75,13 +75,13 @@ try:
 
         #for (sale_id, sell_date, qty) in sales:
         while i < len(sales):
-            sale_id, sell_date, qty = unpack(sales[i])
+            sale_id, sale_order_id, sell_date, qty = unpack(sales[i])
 
             print("") # Print blank line
-            print(f'Sale_Id: {sale_id} Sell_Date: {sell_date} Qty: {qty:.3f}')
+            print(f'Sale_Id: {sale_id} Order_Id: {sale_order_id} Sell_Date: {sell_date} Qty: {qty:.3f}')
 
             print("Find possible buy order")
-            positionSearchQuery = ("SELECT Id, Order_Date, Remaining_Qty "
+            positionSearchQuery = ("SELECT Id, Order_Id, Order_Date, Remaining_Qty "
                 "FROM positions "
                 "WHERE Coin = %s and Remaining_Qty > 0.0 and Order_Date <= %s ")
             
@@ -90,9 +90,9 @@ try:
 
             carry_over_qty = 0.000000
 
-            for (position_id, buy_date, remaining_qty) in positionSearchCursor:                
+            for (position_id, position_order_id, buy_date, remaining_qty) in positionSearchCursor:                
                 dec_remaining_qty = Decimal(remaining_qty)
-                print(f'------ Position_Id: {position_id} Buy_Date: {buy_date} Remaining_Qty: {remaining_qty} Carry_Over: {carry_over_qty}')
+                print(f'------ Position_Id: {position_id} Order_Id: {position_order_id} Buy_Date: {buy_date} Remaining_Qty: {remaining_qty} Carry_Over: {carry_over_qty}')
             
                 # The amount to pull out of next order or update this position with?
                 if (carry_over_qty < 0.0):
@@ -104,7 +104,7 @@ try:
                     if (carry_over_qty > 0.0):
                         print(f'5: carry_over_qty is greater than 0.0: {carry_over_qty}')
                         # Create a new xref using the carry_over_qty
-                        insert_position_sales(position_id, sale_id, remaining_qty - carry_over_qty, cnx)
+                        insert_position_sales(position_id, position_order_id, sale_id, sale_order_id, remaining_qty - carry_over_qty, cnx)
                         
                         # We need to update the position's remaining_qty
                         update_position(position_id, carry_over_qty, cnx)
@@ -123,7 +123,7 @@ try:
                     # Update position's remaining_qty to 0
                     update_position(position_id, 0.0, cnx)
 
-                    insert_position_sales(position_id, sale_id, remaining_qty, cnx)
+                    insert_position_sales(position_id, position_order_id, sale_id, sale_order_id, remaining_qty, cnx)
 
                     # Mark as processed
                     mark_sale_as_processed(sale_id, cnx)
@@ -137,7 +137,7 @@ try:
                     # Update position's remaining_qty to 0
                     update_position(position_id, 0, cnx)
 
-                    insert_position_sales(position_id, sale_id, remaining_qty, cnx)
+                    insert_position_sales(position_id, position_order_id, sale_id, sale_order_id, remaining_qty, cnx)
                 else:
                     # carry_over_qty > 0
                     print('3: Carry over > 0, next order will get this one.')
@@ -145,7 +145,7 @@ try:
                     # Update position's remaining_qty to carry_over_qty
                     update_position(position_id, carry_over_qty, cnx)
 
-                    insert_position_sales(position_id, sale_id, qty, cnx)
+                    insert_position_sales(position_id, position_order_id, sale_id, sale_order_id, qty, cnx)
                     # Mark as processed
                     mark_sale_as_processed(sale_id, cnx)
 
