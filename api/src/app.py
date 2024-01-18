@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from mysql.connector import errorcode
-from helpers import get_coins, get_context, get_current_positions
+from helpers import get_coins, get_context, get_current_positions, get_current_positions_for_coin
 
 app = Flask(__name__)
 
@@ -18,7 +18,9 @@ def coins():
     coins = get_coins(cnx)
     cnx.close()
 
-    return jsonify(coins)
+    response = jsonify(coins)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/positions', methods=['GET'])
 def positions():
@@ -26,7 +28,19 @@ def positions():
     positions = get_current_positions(cnx)
     cnx.close()
 
-    return jsonify(positions)
+    response = jsonify(positions)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+
+@app.route('/positions/<string:coin>', methods=['GET'])
+def coin_positions(coin):
+    cnx = get_context()
+    positions = get_current_positions_for_coin(cnx, coin)
+    cnx.close()
+
+    response = jsonify(positions)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)

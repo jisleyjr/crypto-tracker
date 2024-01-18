@@ -48,3 +48,29 @@ def get_current_positions(cnx):
     cursor.close()
 
     return positions
+
+def get_current_positions_for_coin(cnx, coin):
+    positions = []
+    cursor = cnx.cursor(buffered=True)
+
+    query = ("SELECT Order_Date, Coin, Original_Qty, Remaining_Qty, Price "
+        "FROM positions "
+        "WHERE Remaining_Qty > 0 AND Coin = '" + coin + "' "
+        "ORDER BY Coin asc, Order_Date asc;")
+
+    cursor.execute(query)
+
+    for (order_date, coin, original_qty, remaining_qty, price) in cursor:
+        positions.append(
+            {
+                "order_date": order_date, 
+                "coin": coin, 
+                "original_qty": str(original_qty),
+                "remaining_qty": str(remaining_qty),
+                "price": str(price)
+            }
+        )
+    
+    cursor.close()
+
+    return positions
