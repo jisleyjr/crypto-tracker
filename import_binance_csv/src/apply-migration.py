@@ -4,7 +4,7 @@ from mysql.connector import errorcode
 from decouple import config
 
 def update_position(position_id, qty, cnx):
-    query = ("UPDATE positions SET Remaining_Qty = Remaining_Qty - %s WHERE Order_Id = %s ")
+    query = ("UPDATE positions SET Remaining_Qty = Remaining_Qty - %s WHERE Id = %s ")
     
     cursor = cnx.cursor(buffered=True)
     cursor.execute(query, (qty, position_id))
@@ -12,7 +12,7 @@ def update_position(position_id, qty, cnx):
     return cursor.rowcount
 
 def mark_sale_as_processed(sale_id, cnx):
-    query = ("UPDATE sales SET Processed = %s WHERE Order_Id = %s ")
+    query = ("UPDATE sales SET Processed = %s WHERE Id = %s ")
 
     cursor = cnx.cursor(buffered=True)
     cursor.execute(query, (1, sale_id))
