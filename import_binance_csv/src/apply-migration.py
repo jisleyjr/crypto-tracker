@@ -29,7 +29,7 @@ try:
 
     query = ("SELECT position_sales.Position_id, position_sales.Sale_Id, position_sales.Qty "
              "FROM position_sales "
-             "INNER JOIN sales on sales.Order_id = position_sales.Sale_Id "
+             "INNER JOIN sales on sales.Order_id = position_sales.Sale_Order_Id "
              "WHERE sales.Processed = 0 "
              "ORDER BY position_sales.Id")
 
