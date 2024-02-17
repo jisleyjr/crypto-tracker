@@ -10,7 +10,7 @@ def get_coins(cnx):
     
     query = ("SELECT Base_Asset, COUNT(Order_Id) " 
         "FROM transactions WHERE Category = 'Spot Trading' " 
-        "GROUP BY Base_Asset")
+        "GROUP BY Base_Asset ORDER BY Base_Asset asc")
 
     cursor.execute(query)
 

@@ -10,8 +10,10 @@ function App() {
     <div className="App">
       <header className="App-header">
         <Coins onChange={event => setCoin(event.target.value)}/>
-        <Positions selectedCoin={coin} />
       </header>
+      <body className="App-body">
+        <Positions selectedCoin={coin} />
+      </body>
     </div>
   );
 }
