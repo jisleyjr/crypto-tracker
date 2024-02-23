@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from mysql.connector import errorcode
-from helpers import get_coins, get_context, get_current_positions, get_current_positions_for_coin
+from helpers import get_coins, get_context, get_current_positions, get_current_positions_for_coin, get_sales_by_year
 
 app = Flask(__name__)
 
@@ -39,6 +39,16 @@ def coin_positions(coin):
     cnx.close()
 
     response = jsonify(positions)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+
+@app.route('/sales/<int:year>', methods=['GET'])
+def sales_by_year(year):
+    cnx = get_context()
+    sales = get_sales_by_year(cnx, year)
+    cnx.close()
+
+    response = jsonify(sales)
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
