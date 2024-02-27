@@ -55,10 +55,10 @@ def get_current_positions_for_coin(cnx, coin):
 
     query = ("SELECT Order_Date, Coin, Original_Qty, Remaining_Qty, Price "
         "FROM positions "
-        "WHERE Remaining_Qty > 0 AND Coin = '" + coin + "' "
-        "ORDER BY Coin asc, Order_Date asc;")
+        "WHERE Remaining_Qty > 0 AND Coin = %s "
+        "ORDER BY Order_Date asc;")
 
-    cursor.execute(query)
+    cursor.execute(query, (coin,))
 
     for (order_date, coin, original_qty, remaining_qty, price) in cursor:
         positions.append(
@@ -88,10 +88,10 @@ def get_sales_by_year(cnx, year):
         "FROM sales "
         "LEFT JOIN position_sales as ps on ps.Sale_Id = sales.Id "
         "LEFT JOIN positions on ps.Position_Id = positions.Id "
-        "WHERE sales.Order_Date >= '" + str(year) + "-01-01 00:00:00' AND sales.Order_Date < '" + str(year + 1) + "-01-01 00:00:00' "
+        "WHERE sales.Order_Date >= %s AND sales.Order_Date < %s "
         "ORDER BY sales.Coin, sales.Order_Date asc")
     
-    cursor.execute(query)
+    cursor.execute(query, (str(year) + '-01-01 00:00:00', str(year + 1) + '-01-01 00:00:00'))
 
     for (coin, order_id, sales_date, gains_losses, total_proceeds, actual_proceeds, processed_qty, qty, buy_date, total_cost, actual_cost) in cursor:
         sales.append(

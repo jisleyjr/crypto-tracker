@@ -44,6 +44,9 @@ def coin_positions(coin):
 
 @app.route('/sales/<int:year>', methods=['GET'])
 def sales_by_year(year):
+    if year < 2020:
+        return jsonify(message="Year must be greater than 2020"), 400
+
     cnx = get_context()
     sales = get_sales_by_year(cnx, year)
     cnx.close()
