@@ -32,7 +32,7 @@ export default function Positions({selectedCoin}) {
             (res) => res.json()
           ),
         queryKey: ['positions_' + selectedCoin],
-    });    
+    });
 
     // Show a loading message while data is fetching
     if (isLoading) {
