@@ -10,10 +10,12 @@ const columns = [
     {
 		name: 'Buy Date',
 		selector: row => row.buy_date,
+        format: row => new Date(row.buy_date).toLocaleDateString(),
 	},
 	{
 		name: 'Sales Date',
 		selector: row => row.sales_date,
+        format: row => new Date(row.sales_date).toLocaleDateString(),
 	},
     {
         name: 'Cost',

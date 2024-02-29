@@ -1,9 +1,8 @@
 SELECT sales.Coin, sales.Order_id, sales.Order_Date as Sales_Date, 
-(ps.Qty * sales.Price) - (ps.Qty * positions.Price) as GainsLosses, sales.Total_Proceeds,
+positions.Order_Date as Buy_Date,
 ps.Qty * sales.Price as Actual_Proceeds,
-ps.Qty as Processed_Qty, sales.Qty,
-positions.Order_Date as Buy_Date, positions.Total_Cost,
-ps.Qty * positions.Price as Actual_Cost, sales.Processed
+ps.Qty * positions.Price as Actual_Cost, 
+(ps.Qty * sales.Price) - (ps.Qty * positions.Price) as GainsLosses
 FROM sales
 LEFT JOIN position_sales as ps on ps.Sale_Id = sales.Id
 LEFT JOIN positions on ps.Position_Id = positions.Id
