@@ -18,12 +18,12 @@ const columns = [
         format: row => new Date(row.sales_date).toLocaleDateString(),
 	},
     {
-        name: 'Cost',
-        selector: row => row.actual_cost,
-    },
-    {
         name: 'Proceeds',
         selector: row => row.actual_proceeds,
+    },
+    {
+        name: 'Cost',
+        selector: row => row.actual_cost,
     },
     {
         name: 'Gains / Losses',
@@ -34,7 +34,7 @@ const columns = [
 function Sales() {
     const { data: sales, isLoading, error } = useQuery({
         queryFn: () =>
-          fetch('http://localhost:5000/sales/2023').then(
+          fetch('http://localhost:5000/sales/2024').then(
             (res) => res.json()
           ),
         queryKey: ['sales_2023'],
