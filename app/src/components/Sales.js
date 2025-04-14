@@ -29,6 +29,10 @@ const columns = [
         name: 'Gains / Losses',
         selector: row => row.gains_losses,
     },
+    {
+        name: 'Source',
+        selector: row => row.source,
+    }
 ];
 
 function Sales() {
