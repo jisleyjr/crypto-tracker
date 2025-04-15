@@ -88,11 +88,23 @@ def get_sales_by_year(cnx, year):
         "FROM sales "
         "LEFT JOIN position_sales as ps on ps.Sale_Id = sales.Id "
         "LEFT JOIN positions on ps.Position_Id = positions.Id "
-        "WHERE sales.Order_Date >= %s AND sales.Order_Date < %s "
+        "WHERE sales.Order_Date >= %s AND sales.Order_Date < %s AND ps.ID IS NOT null "
         "GROUP BY sales.Coin, Sales_Date, Buy_Date, sales.Source "
-        "ORDER BY sales.Source asc, sales.Coin, Sales_Date asc, Buy_Date asc;")
+    "UNION "
+        "SELECT sales.Coin, "
+        "DATE_FORMAT(sales.Order_Date, '%Y-%m-%d') as Sales_Date, "
+        "NULL as Buy_Date, "
+        "SUM(sales.Total_Proceeds) as Actual_Proceeds, "
+        "NULL as Actual_Cost, "
+        "NULL as GainsLosses, "
+        "sales.Source "
+        "FROM sales "
+        "LEFT JOIN position_sales as ps on ps.Sale_Id = sales.Id "
+        "WHERE sales.Order_Date >= %s AND sales.Order_Date < %s AND ps.Id IS null "
+        "GROUP BY sales.Coin, Sales_Date, sales.Source "
+    "ORDER BY Source asc, Coin, Sales_Date asc, Buy_Date asc;")
     
-    cursor.execute(query, (str(year) + '-01-01 00:00:00', str(year + 1) + '-01-01 00:00:00'))
+    cursor.execute(query, (str(year) + '-01-01 00:00:00', str(year + 1) + '-01-01 00:00:00', str(year) + '-01-01 00:00:00', str(year + 1) + '-01-01 00:00:00'))
 
     for (coin, sales_date, buy_date, actual_proceeds, actual_cost, gains_losses, source) in cursor:
         sales.append(

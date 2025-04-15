@@ -11,8 +11,8 @@ try:
     data_transactions = []
 
     add_transaction = ("INSERT INTO positions "
-            "(Order_Id, Order_Date, Coin, Original_Qty, Remaining_Qty, Price, Total_Cost) "
-            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(original_qty)s, %(remaining_qty)s, %(price)s, %(total_cost)s )")
+            "(Order_Id, Order_Date, Coin, Original_Qty, Remaining_Qty, Price, Total_Cost, Source) "
+            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(original_qty)s, %(remaining_qty)s, %(price)s, %(total_cost)s, %(source)s) ")
 
     coins = get_coins(cnx)
     
@@ -24,19 +24,19 @@ try:
 
         query = ("SELECT MAX(Time) as Order_Date, Order_Id, "
             "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, "
-            "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price "
+            "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price, Source "
             "FROM transactions "
-            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT') and Operation = 'Buy' "
-            "GROUP BY Order_Id "
+            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Buy' "
+            "GROUP BY Order_Id, Source "
             "ORDER BY Base_Asset asc, Order_Date asc")
 
         cursor.execute(query)
 
         # Loop through the orders and if not in the positions table insert it
-        for (order_date, order_id, coin, qty, price) in cursor:
-            #print(order_id)
+        for (order_date, order_id, coin, qty, price, source) in cursor:
+            print(order_id)
 
-            orderSearchQuery = ("SELECT Id FROM positions WHERE Order_Id = " + order_id)
+            orderSearchQuery = ("SELECT Id FROM positions WHERE Order_Id = '" + order_id + "'")
             orderSearchCursor = cnx.cursor(buffered=True)
             orderSearchCursor.execute(orderSearchQuery)
 
@@ -48,7 +48,8 @@ try:
                     'original_qty': qty,
                     'remaining_qty': qty,
                     'price': price,
-                    'total_cost': qty * price
+                    'total_cost': qty * price,
+                    'source': source
                 }
 
                 print('Adding to array')

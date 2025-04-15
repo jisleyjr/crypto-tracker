@@ -5,7 +5,7 @@ from operator import delitem
 from mysql.connector import errorcode
 from helpers import get_coins, get_context
 
-def process_transaction(data_transactions, order_date, order_id, coin, qty, price, total, cnx):
+def process_transaction(data_transactions, order_date, order_id, coin, qty, price, total, source, cnx):
     orderSearchQuery = ("SELECT Id FROM sales WHERE Order_Date = %s and Order_Id = %s")
     orderSearchCursor = cnx.cursor(buffered=True)
     orderSearchCursor.execute(orderSearchQuery, (order_date, order_id))
@@ -18,7 +18,8 @@ def process_transaction(data_transactions, order_date, order_id, coin, qty, pric
             'coin': coin,
             'qty': qty,
             'price': price,
-            'total_proceeds': total
+            'total_proceeds': total,
+            'source': source
         }
 
         print('Adding to array')
@@ -32,8 +33,8 @@ try:
     data_transactions = []
 
     add_transaction = ("INSERT INTO sales "
-            "(Order_Id, Order_Date, Coin, Qty, Price, Total_Proceeds) "
-            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(qty)s, %(price)s, %(total_proceeds)s )")
+            "(Order_Id, Order_Date, Coin, Qty, Price, Total_Proceeds, Source) "
+            "VALUES (%(order_id)s, %(order_date)s, %(coin)s, %(qty)s, %(price)s, %(total_proceeds)s, %(source)s) ")
 
     coins = get_coins(cnx)
 
@@ -46,34 +47,34 @@ try:
         query = ("SELECT MAX(Time) as Order_Date, Order_Id, "
             "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, "
             "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price, "
-            "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) as Total, (Max(Time) -  Min(Time)) as Difference "
+            "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) as Total, (Max(Time) -  Min(Time)) as Difference, Source "
             "FROM transactions "
-            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT') and Operation = 'Sell' "
-            "GROUP BY Order_Id "
+            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Sell' "
+            "GROUP BY Order_Id, Source "
             "ORDER BY Base_Asset asc, Order_Date asc")
 
         cursor.execute(query)
 
         # Loop through the orders and if not in the sales table insert it
-        for (order_date, order_id, coin, qty, price, total, difference) in cursor:
+        for (order_date, order_id, coin, qty, price, total, difference, source) in cursor:
             if (difference > 5184000):
                 # There are multiple sales that spread over a day, create individual sales records
                 subqueryCursor = cnx.cursor(buffered=True)
                 subquery = ("SELECT Time as Order_Date, Order_Id, "
                     "Base_Asset AS Coin, Realized_Amount_For_Base_Asset AS Qty, "
                     "Realized_Amount_For_Quote_Asset_In_USD_Value / Realized_Amount_For_Base_Asset as Price, "
-                    "Realized_Amount_For_Quote_Asset_In_USD_Value as Total "
+                    "Realized_Amount_For_Quote_Asset_In_USD_Value as Total, Source "
                     "FROM transactions "
-                    "WHERE Category = 'Spot Trading' and Base_Asset = %s and Quote_Asset IN ('USD', 'USDT') and Operation = 'Sell' and Order_Id = %s"
+                    "WHERE Category = 'Spot Trading' and Base_Asset = %s and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Sell' and Order_Id = %s"
                     "ORDER BY Order_Date asc")
                 
                 subqueryCursor.execute(subquery, (coin, order_id))
 
-                for (order_date, order_id, coin, qty, price, total) in subqueryCursor:
-                    process_transaction(data_transactions, order_date, order_id, coin, qty, price, total, cnx)
+                for (order_date, order_id, coin, qty, price, total, source) in subqueryCursor:
+                    process_transaction(data_transactions, order_date, order_id, coin, qty, price, total, source, cnx)
 
             else:
-                process_transaction(data_transactions, order_date, order_id, coin, qty, price, total, cnx)
+                process_transaction(data_transactions, order_date, order_id, coin, qty, price, total, source, cnx)
 
         cursor.close()
 
