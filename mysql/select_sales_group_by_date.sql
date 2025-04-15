@@ -6,6 +6,6 @@ SUM(ps.Qty * sales.Price) - SUM(ps.Qty * positions.Price) as GainsLosses
 FROM sales
 LEFT JOIN position_sales as ps on ps.Sale_Id = sales.Id
 LEFT JOIN positions on ps.Position_Id = positions.Id
-WHERE  sales.Order_Date >= '2023-01-01 00:00:00' 
+WHERE  sales.Order_Date >= '2024-01-01 00:00:00' 
 GROUP BY sales.Coin, Sales_Date, Buy_Date
 ORDER BY sales.Coin, Sales_Date asc, Buy_Date asc
