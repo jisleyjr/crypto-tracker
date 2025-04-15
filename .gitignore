@@ -130,4 +130,6 @@ dmypy.json
 
 # Custom
 *.csv
+*.json
 data/
+.DS_Store
