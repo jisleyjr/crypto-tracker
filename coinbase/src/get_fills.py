@@ -1,11 +1,17 @@
 from coinbase.rest import RESTClient
 from json import dumps
 import json
+import sys
 
 client = RESTClient()
 
-# Create a variable to hold the year
-year = 2024
+# Check if the year was provided
+if (len(sys.argv) < 2):
+    print("Year was not provided!")
+    exit()
+
+print('Get the year to import')
+year = sys.argv[1]
 
 print(f"Get transactinons for year {year}")
 

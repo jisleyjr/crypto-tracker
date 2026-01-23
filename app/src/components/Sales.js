@@ -38,10 +38,10 @@ const columns = [
 function Sales() {
     const { data: sales, isLoading, error } = useQuery({
         queryFn: () =>
-          fetch('http://localhost:5000/sales/2024').then(
+          fetch('http://localhost:5000/sales/2025').then(
             (res) => res.json()
           ),
-        queryKey: ['sales_2023'],
+        queryKey: ['sales_2025'],
     });
 
     // Show a loading message while data is fetching
