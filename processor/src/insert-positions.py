@@ -26,7 +26,7 @@ try:
             "Base_Asset AS Coin, SUM(Realized_Amount_For_Base_Asset) AS Qty, "
             "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price, Source "
             "FROM transactions "
-            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Buy' "
+            "WHERE Category IN ('Spot Trading', 'Basic Trading') and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Buy' "
             "GROUP BY Order_Id, Source "
             "ORDER BY Base_Asset asc, Order_Date asc")
 

@@ -49,7 +49,7 @@ try:
             "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) / SUM(Realized_Amount_For_Base_Asset) as Price, "
             "SUM(Realized_Amount_For_Quote_Asset_In_USD_Value) as Total, (Max(Time) -  Min(Time)) as Difference, Source "
             "FROM transactions "
-            "WHERE Category = 'Spot Trading' and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Sell' "
+            "WHERE Category IN ('Spot Trading', 'Basic Trading')  and Base_Asset = '" + coin + "' and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Sell' "
             "GROUP BY Order_Id, Source "
             "ORDER BY Base_Asset asc, Order_Date asc")
 
@@ -65,7 +65,7 @@ try:
                     "Realized_Amount_For_Quote_Asset_In_USD_Value / Realized_Amount_For_Base_Asset as Price, "
                     "Realized_Amount_For_Quote_Asset_In_USD_Value as Total, Source "
                     "FROM transactions "
-                    "WHERE Category = 'Spot Trading' and Base_Asset = %s and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Sell' and Order_Id = %s"
+                    "WHERE Category IN ('Spot Trading', 'Basic Trading') and Base_Asset = %s and Quote_Asset IN ('USD', 'USDT', 'USDC') and Operation = 'Sell' and Order_Id = %s"
                     "ORDER BY Order_Date asc")
                 
                 subqueryCursor.execute(subquery, (coin, order_id))
