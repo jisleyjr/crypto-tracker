@@ -85,7 +85,13 @@ try:
                     quote_asset_amount = base_asset_amount_usd + commission
 
                 # Split product_id into base and quote
-                product_id = fill['product_id']        
+                product_id = fill['product_id']
+
+                # Ignore any product_id with a suffix of -KALSHI
+                if product_id.endswith('-KALSHI'):
+                    print(f"Skipping product_id {product_id} because it ends with -KALSHI")
+                    continue 
+                   
                 base_asset, quote_asset = product_id.split('-')
                 source = 'coinbase'
 
