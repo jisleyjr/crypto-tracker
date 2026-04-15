@@ -133,3 +133,6 @@ dmypy.json
 *.json
 data/
 .DS_Store
+
+# Ignore bash files with suffix -interactive.sh
+*-interactive.sh

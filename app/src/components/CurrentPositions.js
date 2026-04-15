@@ -9,7 +9,7 @@ function CurrentPositions() {
   return (
     <div className="App">
       <header className="App-header">
-        <Coins onChange={event => setCoin(event.target.value)}/>
+        <Coins onChange={event => setCoin(event.target.value)} />
       </header>
       <body className="App-body">
         <Positions selectedCoin={coin} />
