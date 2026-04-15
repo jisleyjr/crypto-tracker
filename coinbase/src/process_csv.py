@@ -1,10 +1,14 @@
+import csv
 import sys
-from coinbase.rest import RESTClient
-from json import dumps
-import json
 import mysql.connector
+from operator import delitem
 from mysql.connector import errorcode
 from decouple import config
+
+# This script processes a Coinbase CSV export of conversions
+#ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes
+#11,2025-12-31 17:52:52 UTC,Convert,USDC,-100,USD,$1.00,$98.90878,$97.08886,-$1.81992152988,Converted 100 USDC to 0.778610688 SOL
+#22,2025-12-17 16:58:53 UTC,Convert,BNB,-0.1,USD,$846.37,$84.62200,$83.77578,-$0.84622,Converted 0.1 BNB to 83.77578 USDC
 
 # Check if the filename was provided
 if (len(sys.argv) < 2):
@@ -14,15 +18,17 @@ if (len(sys.argv) < 2):
 print('Get the filename to import')
 filename = sys.argv[1]
 
+# initializing the titles and rows list
+fields = []
+rows = []
+
 print(f"trade_id | order_id | Side | Sequence Timestamp | Product ID | Base Asset | Quote Asset")
 try:
     cnx = mysql.connector.connect(user=config('USER'), password=config('PASSWORD'),
                                  host=config('HOST'),
                                  database='crypto-tracker')
-    
-    # Update the data.json file
-    with open(filename, 'r', encoding='utf-8') as f:
 
+    with open(filename, newline='\n') as csvfile:
         data_transactions = []
         add_transaction = ("INSERT INTO transactions "
                     "("
@@ -44,15 +50,10 @@ try:
                     "%(payment_method)s, %(with_method)s, %(note)s, %(source)s )")
         cursor = cnx.cursor(buffered=True)
 
-        # Load the file
-        data = json.load(f)
-        # Get the first object with the key "fills"
-        fills = data['fills']
-        # iterate over the fills
-        for fill in fills:
-            # Grab the trade and order id and see if this transaction already exists
-            trade_id = fill['trade_id'] # transaction_id - can not duplicate
-            order_id = fill['order_id'] # order_id - can duplicate
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            trade_id = row['ID']
+            order_id = row['ID']
 
             print('Check if transaction exists')
 
@@ -61,47 +62,62 @@ try:
 
             cursor.execute(query, (order_id, trade_id))
 
-            if cursor.rowcount > 0:
+            if cursor.rowcount > 0: # switch back to 0 when done
                 print('Transaction already exists')
             else:
                 print('Building data transaction....')
-            
-                user_id = fill['user_id'] # user_id
-                entry_id = fill['entry_id']
-                trade_time = fill['trade_time'] # format to 2021-02-09 14:47:06
-                # Change the format from 2025-04-07T03:43:34.968208Z to 2025-04-07 03:43:34
-                trade_time = trade_time.replace('T', ' ').replace('Z', '')
-                side = fill['side'] # Operation
-                sequence_timestamp = fill['sequence_timestamp'] # not needed?
+
+                user_id = "1234"  # Default user id for Coinbase imports
+                trade_time = row['Timestamp'].replace(' UTC','')
+                asset = row['Asset']
+                price_at_transaction = float(row['Price at Transaction'].replace('$','').replace(',',''))
                 
-                price = float(fill['price']) # price
-                commission = float(fill['commission']) # fee_amount
-                base_asset_amount = fill['size'] # amount of asset bought or sold
-                base_asset_amount_usd = price * float(base_asset_amount) # amount in USD
+                # A note is comprised of: Converted 100 USDC to 0.778610688 SOL
+                # We need to extract the amount of SOL
+                note_parts = row['Notes'].split(' ')
+                from_amount = float(note_parts[1])
+                from_asset = note_parts[2]
+                to_amount = float(note_parts[4])
+                to_asset = note_parts[5]
 
-                if side == 'SELL':
-                    quote_asset_amount = base_asset_amount_usd - commission # amount in USD
+                base_asset_amount = 0.0
+                base_asset_amount_usd = 0.0
+                commission = float(row['Fees and/or Spread'].replace('-','').replace('$','').replace(',',''))
+
+                # when asset is USDC that means we are converting from USDC to to_asset
+                if from_asset == 'USDC':
+                    # Buy
+                    print(f"Converting from {from_asset} to {to_asset}")
+                    side = 'BUY'
+                    product_id = f"{to_asset}-{from_asset}"
+                    # amount of the coin bought
+                    base_asset_amount = to_amount 
+                    base_asset_amount_usd = from_amount * price_at_transaction  # assuming 1 USDC = 1 USD
                 else:
-                    quote_asset_amount = base_asset_amount_usd + commission
-
-                # Split product_id into base and quote
-                product_id = fill['product_id']
-
-                # Ignore any product_id with a suffix of -KALSHI
-                if product_id.endswith('-KALSHI'):
-                    print(f"Skipping product_id {product_id} because it ends with -KALSHI")
-                    continue 
-                   
+                    # Sell
+                    print(f"Converting from {from_asset} to {to_asset}")
+                    side = 'SELL'
+                    product_id = f"{from_asset}-{to_asset}"
+                    # amount of the coin sold
+                    base_asset_amount = from_amount
+                    base_asset_amount_usd = from_amount * price_at_transaction
+                
                 base_asset, quote_asset = product_id.split('-')
                 source = 'coinbase'
 
+                quote_asset = 'USDC'
+
+                quote_asset_amount = base_asset_amount_usd # amount in USD
+                quote_asset_amount_usd = base_asset_amount_usd
+
                 # Print the values
-                print(f"{trade_id} | {order_id} | {side} | {product_id} | {base_asset} | {base_asset_amount} | {base_asset_amount_usd} | {quote_asset} | {quote_asset_amount} | {commission}")
+                print(f"{'trade_id':<25} | {'order_id':<25} | {'Side':<5} | {'Timestamp':<19} | {'Product ID':<10} | {'Base Asset':<12} | {'Base Amount':<11} | {'Base USD':<8} | {'Quote Asset':<12} | {'Quote Amount':<12} | {'Commission':<15}")
+                print(f"{trade_id:<25} | {order_id:<25} | {side:<5} | {trade_time:<19} | {product_id:<10} | {base_asset:<12} | {base_asset_amount:<11} | {base_asset_amount_usd:<8} | {quote_asset:<12} | {quote_asset_amount:<12} | {commission:<15}")
 
                 data_transaction = {
                     'user_id': user_id,
                     'time': trade_time,
-                    'category': 'Spot Trading',
+                    'category': 'Basic Trading',
                     'operation': side,
                     'order_id': order_id,
                     'transaction_id': trade_id,
@@ -113,7 +129,7 @@ try:
                     'base_asset_amount_usd': base_asset_amount_usd,
                     'quote_asset': quote_asset,
                     'quote_asset_amount': quote_asset_amount,
-                    'quote_asset_amount_usd': quote_asset_amount,
+                    'quote_asset_amount_usd': quote_asset_amount_usd,
                     'fee_asset': quote_asset,
                     'fee_asset_amount': commission,
                     'fee_asset_amount_usd': commission,
@@ -123,18 +139,15 @@ try:
                     'source': source
                 }
 
-                #print('Adding to array')
                 data_transactions.append(data_transaction)
 
                 print('Executing bulk insert sql')
-        
+
         cursor.executemany(add_transaction, data_transactions)
         
         # Make sure data is committed to the database
         cnx.commit()
         cursor.close()
-
-        #print(row['\ufeffUser_Id'])
         print('Done')
 
 except mysql.connector.Error as err:
@@ -146,5 +159,3 @@ except mysql.connector.Error as err:
         print(err)
 else:
     cnx.close()
-
-
