@@ -11,9 +11,9 @@ function Sales() {
             <header className="App-header">
                 <AvailableYears onChange={event => setYear(event.target.value)} />
             </header>
-            <body className="App-body">
+            <main className="App-body">
                 <SalesList selectedYear={year} />
-            </body>
+            </main>
         </div>
     )
 }
