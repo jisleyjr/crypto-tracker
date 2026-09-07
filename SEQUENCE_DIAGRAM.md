@@ -41,7 +41,7 @@ sequenceDiagram
     end
     Importer->>DB: COMMIT
 
-    User->>Importer: Run insert-sales.py
+    User->>Importer: Run insert-position-sales.py
     Importer->>DB: SELECT DISTINCT coins with sales
     DB-->>Importer: List of coins
     loop For each coin
@@ -94,7 +94,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant Sales as insert-sales.py
+    participant Sales as insert-position-sales.py
     participant DB as MySQL
 
     Sales->>DB: Get unprocessed sales (ordered by Order_Date ASC)
