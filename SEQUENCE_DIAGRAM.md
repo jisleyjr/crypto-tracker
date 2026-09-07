@@ -41,6 +41,33 @@ sequenceDiagram
     end
     Importer->>DB: COMMIT
 
+    User->>Importer: Run insert-sales.py
+    Importer->>DB: SELECT DISTINCT coins with Spot Trading transactions
+    DB-->>Importer: List of coins
+    loop For each coin
+        Importer->>DB: SELECT sell orders grouped by Order_Id and Source
+        DB-->>Importer: Order data and fill time span
+        alt Fills span more than 60 days
+            Importer->>DB: SELECT individual sell fills for the order
+            DB-->>Importer: Individual sale data
+            loop For each fill
+                Importer->>DB: SELECT FROM sales WHERE Order_Date + Order_Id match
+                DB-->>Importer: Row count
+                alt Not found
+                    Importer->>Importer: Buffer individual sale record
+                end
+            end
+        else Fills span 60 days or less
+            Importer->>DB: SELECT FROM sales WHERE Order_Date + Order_Id match
+            DB-->>Importer: Row count
+            alt Not found
+                Importer->>Importer: Buffer aggregated sale record
+            end
+        end
+    end
+    Importer->>DB: Bulk INSERT buffered sales
+    Importer->>DB: COMMIT
+
     User->>Importer: Run insert-position-sales.py
     Importer->>DB: SELECT DISTINCT coins with sales
     DB-->>Importer: List of coins
