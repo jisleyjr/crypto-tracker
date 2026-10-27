@@ -90,8 +90,14 @@ try:
                 # Ignore any product_id with a suffix of -KALSHI
                 if product_id.endswith('-KALSHI'):
                     print(f"Skipping product_id {product_id} because it ends with -KALSHI")
-                    continue 
-                   
+                    continue
+                elif  '-' not in product_id: 
+                    print(f"Skipping product_id {product_id} because it doesn't contain a hyphen")
+                    continue
+                elif product_id.count('-') != 1:
+                    print(f"Skipping product_id {product_id} because it contains more than one hyphen")
+                    continue
+                
                 base_asset, quote_asset = product_id.split('-')
                 source = 'coinbase'
 
